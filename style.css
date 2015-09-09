@@ -1,0 +1,238 @@
+.row4
+{
+	display:none;
+}
+
+#userlinks
+{
+	display:none;
+}
+
+#navstrip
+{
+	display:none;
+}
+
+#shoutbox
+{
+	display:none;
+}
+
+
+  div.loading-invisible{
+    /*make invisible*/
+    display:none;
+  }
+
+  /*this is what we want the div to look like
+    when it IS showing*/
+  div.loading-visible{
+    /*make visible*/
+    display:inline;
+	z-index:10;
+	position:fixed;
+	top: 50%;
+	left: 50%;
+	height:480px;
+    width:640px;
+	margin-left:-320px;
+	margin-top:-240px;
+    text-align:center;
+
+    /*in supporting browsers, make it
+      a little transparent*/
+    background:#fff;
+    filter: alpha(opacity=90); /*internet explorer*/
+    -khtml-opacity: 0.90;      /*khtml, old safari*/
+    -moz-opacity: 0.90;       /*mozilla, netscape*/
+    opacity: 0.90;           /*fx, safari, opera*/
+    border-top:1px solid #ddd;
+    border-bottom:1px solid #ddd;
+  }
+
+iframe
+{
+	display:none;
+}
+
+.nav
+{
+	text-align:center;
+}
+
+.nav ul
+{
+	border-bottom: 2px solid;
+	padding-bottom: 5px;
+}
+
+.nav li
+{
+	display:inline;
+	border-top: 2px solid;
+	border-right: 2px solid;
+	border-left: 2px solid;
+	padding: 5px;
+	margin: 0px 5px;
+}
+
+.spaceRight
+{
+	margin-right: 30px;
+}
+
+.spaceLeft
+{
+	margin-left: 42px;
+}
+
+.spaceVertical
+{
+	margin-top: 5px;
+	margin-bottom: 5px;
+}
+
+#movementButtons input
+{
+	font-weight: 900;
+	font-size: 125%;
+}
+
+#movementButtons
+{
+	margin-left:10%;
+}
+
+.boldedTitle
+{
+	font-weight: 700;
+	font-size: 125%;
+}
+
+#unitNum, #txa_eventOutput, #topOutputForm, #topEventForm, #customDefWrapper, #newEventDiv, 
+#conditionForm, #manualMoveAdderForm, #scriptedFightAdderForm, #eventWriterWrapper,
+#unitEditorWrapper, #mapWrapper, #unitBlockDiv,
+#eventBlockWrapper, #manualMoveBlockDiv, #scriptedFightBlockDiv, #condBlockDiv,
+#sel_manualMoveBlock, #sel_manualMoveBlock, #sel_scriptedFightBlock, 
+#txt_newManualMoveBlock, #txt_newScriptedFightBlock, #manualMoveImgDiv, 
+#eventPointerImgDiv, #CAMPointer,
+#sel_availableEventIdsList, #sel_availablePermEventIdsList, #sel_availableCondIdsList,
+#newEventIdNameDiv, #existingEventIdDiv, #attachEventDiv, #closeActionDiv, #eventAdvancedSearchDiv
+{
+	display: none;
+}
+
+#eventAdderForm
+{
+	border-top: 3px solid;
+	padding-top: 10px;
+}
+
+#unitEditorWrapper
+{
+	margin:0 auto;
+}
+
+#mapWrapper
+{
+	float:left;
+	border: 2px solid;
+}
+
+#mapClickDiv
+{
+	background-color:black;
+	color: white;
+	font-weight: 700;
+	font-size: 125%;
+}
+
+#mapImagesDiv
+{
+	position:relative;
+}
+
+#textboxPosImagesDiv
+{
+	height: 161px;
+	width: 241px;
+	display: block;
+	border: 2px solid;
+	position:relative;
+	background-color: black;
+}
+
+.mapSelect
+{
+	padding:10px; 
+	text-align:center;
+	border-top: 2px solid;
+}
+
+.editForm
+{
+border:2px solid;
+padding: 10px;
+margin-left: 20px;
+margin-right: 20px;
+float:left;
+}
+
+.outDisplay
+{
+	float:left;
+	clear:both;
+	width: 700px;
+	margin: 10px;
+	padding: 2px;
+}
+
+.outDisplay > div
+{
+	border: 2px solid;
+	margin-top: 15px;
+	margin-left: 20px;
+	width: 800px;
+}
+
+#txa_eventOutput
+{
+	float:left;
+	clear:both;
+	border: 2px solid;
+	margin-top: 15px;
+	margin-left: 20px;
+	width: 800px;
+}
+
+.b_name
+{
+	background-color: #330033;
+	color: #ffffff;
+	font-weight: 700;
+	font-size: 125%;
+	width: 100%;
+}
+
+.minMaxImg
+{
+	float: right;
+}
+
+
+.unitImg
+{
+	position:absolute;
+	left:0px;
+	top:0px;
+}
+
+.invisChildren > *
+{
+	display:none;
+}
+
+#sel_genCond
+{
+	display:inline;
+}
