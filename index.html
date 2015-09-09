@@ -1,0 +1,1236 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+     <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
+    <script src="http://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+    <script type="text/javascript" src="js/eventiel_selected_maps.js"></script>
+    <script type="text/javascript" src="js/eventiel_event_form_dict.js"></script>
+    <script type="text/javascript" src="js/eventiel_map_sprite_dict.js"></script>
+    <script type="text/javascript" src="js/eventiel_event_code_dictionary.js"></script>
+    <script type="text/javascript" src="js/FE8_Definitions.js"></script>
+    <script type="text/javascript" src="js/FE8_Chapters.js"></script>
+    <script type="text/javascript" src="js/FE8_Music.js"></script>
+    <script type="text/javascript" src="js/FE8_Backgrounds.js"></script>
+    <!--<script type="text/javascript" src="js/FE8_Spells.js"></script>
+       this aint working-->
+    <script type="text/javascript" src="js/Zhack_Definitions.js"></script>
+    <script type="text/javascript" src="js/script_FE8.js"></script>
+    <link href="style.css" rel="stylesheet" type="text/css">
+  </head>
+  <!-- When page loads, map image and FE8 definitions are loaded -->
+<body onload="setUp(getEventFormDictionary(), getSelectedMaps(), getFE8Definitions(), getZhackDefinitions(), getFE8Chapters(), getFE8Music(), getFE8Backgrounds());"> <!-- removed: "getFE8Spells()"-->
+
+<!-- Loading screen mini-popup image -->
+<div id="loading" class="loading-invisible">
+  <img src="LoadingScreen.gif"></img>
+</div>
+
+<!-- Script for loading screen-->
+<script type="text/javascript">
+  document.getElementById("loading").className = "loading-visible";
+  var hideDiv = function(){document.getElementById("loading").className = "loading-invisible";};
+  var oldLoad = window.onload;
+  var newLoad = oldLoad ? function(){hideDiv.call(this);oldLoad.call(this);} : hideDiv;
+  window.onload = newLoad;
+</script>
+<!-- Navigation bar -->
+
+<div id="Navigation" class="nav">
+<input type="hidden" id="hd_selectedEditor" value="UnitEditor">
+<ul>
+  <li id="eventOutputTab"><a href="javascript:switchMainForm('EventOutput', getEventFormDictionary(), getFE8Definitions());">Event Output</a></li>
+  <li id="unitEditorTab"><a href="javascript:switchMainForm('UnitEditor', getEventFormDictionary(), getFE8Definitions());">Unit Blocks Editor</a></li>
+  <li id="eventWriterTab"><a href="javascript:switchMainForm('EventWriter', getEventFormDictionary(), getFE8Definitions());">Event Writer</a></li>
+  <li id="conditionWriterTab"><a href="javascript:switchMainForm('ConditionWriter', getEventFormDictionary(), getFE8Definitions());">Event Conditions</a></li>
+  <li id="defMakerTab"><a href="javascript:switchMainForm('DefMaker', getEventFormDictionary(), getFE8Definitions());">Definitions Creator</a></li>
+</ul>
+<button onclick="saveData();">Save Data</button>
+<button onclick="loadData();">Load Data</button>
+<button onclick="clearData();">Clear Data</button>
+</div>
+
+<!-- Appears at the top of the Event Output form -->
+<form name="topOutputForm" id="topOutputForm">
+Chapter ID: <select name="sel_chosenChapter" id="sel_chosenChapter" onchange="updateEventOutput();" class="spaceRight"></select>
+Start Offset: <input type="text" id="txt_startOffset" value="0xE80000" oninput="updateEventOutput();" class="spaceRight">
+<input type="checkbox" name="ckb_prepScreen" onclick="toggleEventAfterExitingPrepScreen();">Chapter has prep screen &nbsp;&nbsp;
+<hr>
+</form>
+
+<!--
+Appears at top of both the Event Output form and the Unit Editor form
+Allows user to select character/class/item definition files to use
+-->
+<form name="topDefForm" id="topDefForm">
+Definitions: <select name="sel_chosenDef" id="sel_chosenDef" onchange='selectDef();' class="spaceRight">
+<option>N/A</option>
+<option selected>FE8</option>
+<!-- FE8 not supported yet
+<option>FE8</option>
+-->
+<option>Zhack</option>
+</select>
+Custom Def: <input type="file" name="file_customDef" class = "spaceRight" onchange='uploadDef();'>
+<input type="checkbox" name="ckb_defsInOutput" onclick="updateEventOutput();">Use definitions in output<br><hr>
+</form>
+
+<!-- Unit Editor form -->
+<div id="unitEditorWrapper">
+
+<!-- Appears at the top of the Unit Editor form
+Allows user to manage unit blocks and choose what map clicks will do-->
+<form name="topUnitForm" id="topUnitForm">
+
+<!-- Determines what map clicks do-->
+Click To... 
+<select name="sel_mapClickMode" onchange='setMapClickMode();' class="spaceRight">
+  <option>Add</option>
+  <option>Edit</option>
+  <option>Delete</option>
+</select>
+
+<!-- Select which unit block to edit/delete-->
+Unit Block:
+<select name="sel_unitBlock" id="sel_unitBlock" onchange="shiftBlocks('Unit');">
+  <option id="selectBlock0">Units</option>
+</select>
+<input type="button" name="btn_deleteBlock" value="Delete" class="spaceRight" onclick="removeBlock(confirmRemoveBlock('Unit'),'Unit');">
+
+<!-- Add new unit block -->
+New Block: <input type="text" name="txt_newUnitBlock" id="txt_newUnitBlock" placeholder="NewBlockName"> 
+<input type="button" name="btn_addBlock" value="Add" onclick="addBlock('Unit');"><hr>
+</form><br>
+
+<!-- Hidden inputs that keep track of unique ids -->
+<input type="hidden" value="0" id="unitId" />
+<input type="hidden" value="2" id="unitBlockId" />
+<input type="hidden" value="2" id="eventBlockId" />
+<input type="hidden" value="0" id="manualMoveBlockId" />
+<input type="hidden" value="0" id="scriptedFightBlockId" />
+<input type="hidden" value="0" id="conditionId" />
+<input type="hidden" value="0" id="storedConditionId" />
+<input type="hidden" value="1" id="actionId" />
+<input type="hidden" value="0" id="scriptedFightId" />
+
+<!-- Unit Editor form -->
+<form name="unitEditorForm" class="editForm">
+<div id="unitNum">
+Unit #: <input type="text" name="txt_unitNum" size="5" readonly><br>
+</div>
+Character: <select name="sel_character" id="sel_character" class="Char"></select><br>
+Class: <select name="sel_class" id="sel_class" class="Classes" onchange='changeMapSprite();'></select><br>
+Lead Character: <select name="sel_leadChar" id="sel_leadChar"></select><br>
+Level: <input size="2" maxlength="2" type="text" pattern="[0-9]*" name="txt_level" value="1"><br>
+Side: <select name="sel_side" onchange='changeMapSprite();'>
+<option>Ally</option>
+<option>Enemy</option>
+<option>NPC</option>
+</select><br>
+<!-- If autoleveling is checked, autolevel is on-->
+Autoleveling? <input type="checkbox" name="ckb_autoLevel"><br><br>
+
+<!-- Changing unit's load/start position-->
+<input type="radio" name="rd_loadPos" checked="checked" onclick="uncheck(document.unitEditorForm.rd_startPos);" disabled="disabled" hidden> Load Position: 
+<input type="text" name="txt_load_x" value="0" size="2" maxlength="2" class="MapClickPos" readonly>,
+<input type="text" name="txt_load_y" value="0" size="2" maxlength="2" class="MapClickPos" readonly><br><br>
+<input type="radio" name="rd_startPos" onclick="uncheck(document.unitEditorForm.rd_loadPos);" disabled="disabled"hidden> <!-- Start Position:  -->
+<input type="text" name="txt_start_x" value="0" size="2" maxlength="2" class="MapClickPos"
+    onclick="uncheck(document.unitEditorForm.rd_loadPos);
+    document.unitEditorForm.rd_startPos.checked = 'checked';" readonly hidden>
+<input type="text" name="txt_start_y" value="0" size="2" maxlength="2" class="MapClickPos"
+    onclick="uncheck(document.unitEditorForm.rd_loadPos);
+    document.unitEditorForm.rd_startPos.checked = 'checked';" readonly hidden>
+<input type="checkbox" name="ckb_bothPos" checked="" onclick="toggleBothPos()" disabled="disabled" hidden><!--  Same load and start positions<br> -->
+<!-- Flags -->
+Flags:
+<select name="sel_flag" id="sel_flag">
+  <option value="0x00">None</option>
+  <option value="0x2">Drop Item</option>
+  <option value="0x1">Monster Template?</option>
+</select>
+<!-- REDAs -->
+Number of REDAs:
+<input type="number" name="txt_reda_num" value="0" min="0" max="255"><br>
+Pointer to REDAs:
+<input type="text" name="txt_reda_pointer" value=""><br>
+<!-- Items in unit's inventory -->
+<p>Item 1: <select name="sel_item1" id="sel_item1" class="ItemOptions"></select></p>
+<p>Item 2: <select name="sel_item2" id="sel_item2" class="ItemOptions"></select></p>
+<p>Item 3: <select name="sel_item3" id="sel_item3" class="ItemOptions"></select></p>
+<p>Item 4: <select name="sel_item4" id="sel_item4" class="ItemOptions"></select></p>
+
+<!-- Unit's AI -->
+<p><select name="AI">
+    <option>NoAI</option>
+    <option>PursueWithoutHeedAI</option>
+    <option>DefaultAI</option>
+    <option>DoNothing</option>
+    <option>GuardTileAI</option>
+    <option>AttackInRangeAI</option>
+    <option>ChaseOnceApproachedAI</option>
+    <option>HealUnits</option>
+    <option>BrigandAI</option>
+    <option>StealingThiefAI</option>
+    <option>LootingThiefAI</option>
+    <option>MoveWithLeaderAI</option>
+    <option>DemonKingAI</option>
+</select><br></p>
+
+<!-- Buttons for adding and editing units-->
+<input type="button" name="btn_addUnit" value="Add Unit" class="spaceRight" onclick="addUnit(getMapSpriteDict());" disabled = "disabled">
+<input type="button" name="btn_editUnit" value="Edit Unit" onclick="editUnit(getMapSpriteDict());" disabled = "disabled">
+
+</form>
+</div>
+
+<!--Appears at the top of the Event Writer form-->
+<form name="topEventForm" id="topEventForm">
+
+<!--Select an existing event to edit-->
+Event:
+<select name="sel_eventBlock" id="sel_eventBlock" onchange="shiftBlocks('Event');">
+  <option id="selectEventBlock0">BeginningScene</option>
+  <option id="selectEventBlock1">EndingScene</option>
+</select>
+
+<!--Select an existing manual move block to edit-->
+<select name="sel_manualMoveBlock" id="sel_manualMoveBlock" onchange="shiftBlocks('ManualMove');">
+</select>
+
+<!--Select an existing scripted fight block to edit-->
+<select name="sel_scriptedFightBlock" id="sel_scriptedFightBlock" onchange="shiftBlocks('scriptedFight');">
+</select>
+
+<!--Deletes selected event block-->
+<input type="button" name="btn_deleteEventBlock" value="Delete" class="spaceRight" onclick="removeBlock(confirmRemoveBlock('Event'),'Event');">
+
+<!-- Add new event block-->
+New Event: <input type="text" name="txt_newEventBlock" id="txt_newEventBlock" placeholder="NewEventName">
+<input type="text" name="txt_newManualMoveBlock" id="txt_newManualMoveBlock" placeholder="NewMoveName">
+<input type="text" name="txt_newScriptedFightBlock" id="txt_newScriptedFightBlock" placeholder="NewFightName">
+<input type="button" name="btn_addEventBlock" class="spaceRight" value="Add" onclick="addBlock('Event');">
+
+<!-- Switch between event block types (default, manual move, scripted fight)-->
+Event Type:
+<select name="sel_eventActionType" class="spaceRight" onchange="switchEventForm();">
+  <option>Event (Default)</option>
+  <option>Manual_Move</option>
+  <option>Scripted_Fight</option>
+</select><hr>
+</form>
+
+<!-- Event Conditions Form -->
+<form name="conditionForm" id="conditionForm" class="editForm">
+<input type="hidden" name="hd_condXPosField" id="hd_condXPosField">
+<input type="hidden" name="hd_condYPosField" id="hd_condYPosField">
+<input type="hidden" name="hd_selectedCondForm" id="hd_selectedCondForm" value="">
+<span class="boldedTitle">Add a new event condition:</span><br>
+Category:<br>
+<select name="sel_genCond" id="sel_genCond" onchange="getNextCondition('sel_genCond');">
+  <option>Turn</option>
+  <option>Location</option>
+  <option>Character</option>
+  <option>Event</option>
+  <option>Chapter_Goals</option>
+  <option>Traps/Ballistae</option>
+</select><br>
+
+
+<div id="secondCondTier">
+
+<div id="turnCondDiv"><hr>
+At the start of:
+<select name="sel_startTurn">
+  <option>Player Phase</option>
+  <option>Enemy Phase</option>
+  <option>NPC Phase</option>
+</select><br>
+<input type="radio" value="Single" name="rd_singleTurn" onclick="toggleTurnInputForm(0);" checked="checked">Single Turn<br>
+<input type="radio" value="Range" name="rd_rangeTurn" onclick="toggleTurnInputForm(1);">Turn Range<br>
+<div id="singleTurnDiv">Turn:<input type="text" name="txt_singleTurnInput" size="3" value="1"></div>
+<div id="rangeTurnDiv" style="display:none">
+Start Turn:<input type="text" name="txt_startTurnInput" size="3" value="1"><br>
+Amount Of Turns: <input type="text" name="txt_turnAmountInput" size="3" value="2">
+</div><hr>
+</div>
+
+<div id="eventCondDiv"><hr>
+Triggered Id:
+<input type="text" name="txt_condEventId" id="txt_condEventId" placeholder="0x05"><hr>
+</div>
+
+<div id="chapter_goalsCondDiv"><hr>
+<select name="sel_chapter_goalsCond" id="sel_chapter_goalsCond" onchange="getNextCondition('sel_chapter_goalsCond');">
+  <option>Defeat_Boss</option>
+  <option>Defeat_All</option>
+</select>
+</div>
+
+<div id="locationCondDiv">
+Condition:<br>
+<select name="sel_locationCond" id="sel_locationCond" onchange="getNextCondition('sel_locationCond');">
+  <option>Area</option>
+  <option>Village/House</option>
+  <option>Shops</option>
+  <option>Door</option>
+  <option>Chest</option>
+  <option>Throne/Seize</option>
+</select><hr>
+<span id="lb_condPos">Position:</span>
+<input type="text" name="txt_condXPos" id="txt_condXPos" size="3" value="0"
+     onclick="setSelectedCondPosIds('txt_condXPos','txt_condYPos');" readonly>,
+<input type="text" name="txt_condYPos" id="txt_condYPos" size="3" value="0"
+     onclick="setSelectedCondPosIds('txt_condXPos','txt_condYPos');" readonly><br>
+</div>
+
+<div id="characterCondDiv">
+Condition:<br>
+<select name="sel_characterCond" id="sel_characterCond" onchange="getNextCondition('sel_characterCond');">
+  <option>Talk</option>
+  <option>Battled/Killed</option>
+</select>
+</div>
+
+<div id="trapsCondDiv">
+Condition:<br>
+<select name="sel_trapsCond" id="sel_trapsCond" onchange="getNextCondition('sel_trapsCond');">
+  <option>Fire Trap</option>
+  <option>Poison Trap</option>
+  <option>Ballistae</option>
+</select><hr>
+Position:
+<input type="text" name="txt_trapXPos" id="txt_trapXPos" size="3" value="0"
+     onclick="setSelectedCondPosIds('txt_trapXPos','txt_trapYPos');" readonly>,
+<input type="text" name="txt_trapYPos" id="txt_trapYPos" size="3" value="0"
+     onclick="setSelectedCondPosIds('txt_trapXPos','txt_trapYPos');" readonly><br>
+
+</div>
+
+</div>
+
+<div id="thirdCondTier">
+
+<div id="areaCondDiv">
+Bottom-Right Corner:
+<input type="text" name="txt_bottomXArea" id="txt_bottomXArea" size="3" value="15"
+    onclick="setSelectedCondPosIds('txt_bottomXArea','txt_bottomYArea');" readonly>,
+<input type="text" name="txt_bottomYArea" id="txt_bottomYArea" size="3" value="10"
+    onclick="setSelectedCondPosIds('txt_bottomXArea','txt_bottomYArea');" readonly><br>
+Select Just One Tile: <input type="checkbox" name="ckb_sameAreaPos">
+<hr>
+</div>
+
+<div id="villageCondDiv">
+<input type="radio" name="rd_village" checked="checked" onclick="uncheck(document.conditionForm.rd_house);">Village
+<input type="radio" name="rd_house" onclick="uncheck(document.conditionForm.rd_village);">House<br>
+<hr>
+</div>
+
+<div id="shopsCondDiv">
+Shop Type:
+<select name="sel_typeOfShop">
+  <option>Armory</option>
+  <option>Vendor</option>
+  <option>Secret Shop</option>
+</select><br>
+Shop Data Name:<input type="text" name="txt_shopDataPointer" value=""><br>
+Items In Shop:<br>
+<select name="sel_itemsInShop" id="sel_itemsInShop" class="Item" size="10" multiple></select><br>
+<hr></div>
+
+<div id="doorCondDiv">
+</div>
+
+<div id="chestCondDiv">
+<input type="radio" name="rd_itemFromChest" checked="checked" 
+    onclick="uncheck(document.conditionForm.rd_moneyFromChest);">Item:
+<select name="sel_itemFromChest" class="Item"
+    onclick="uncheck(document.conditionForm.rd_moneyFromChest);
+    document.conditionForm.rd_itemFromChest.checked = 'checked';"></select><br>
+<input type="radio" name="rd_moneyFromChest" onclick="uncheck(document.conditionForm.rd_itemFromChest);">Money:
+<input type="text" id="txt_moneyFromChest" value="1000"
+    onclick="uncheck(document.conditionForm.rd_itemFromChest);
+    document.conditionForm.rd_moneyFromChest.checked = 'checked';"><br>
+</div>
+
+<div id="throneCondDiv">
+</div>
+
+<div id="defeat_allCondDiv"><hr></div>
+<div id="defeat_bossCondDiv"><hr></div>
+
+<div id="attachEventDiv">
+<input type="checkbox" name="ckb_eventAttached" onclick="toggleEventIdCondFormVisibility();">Attach an event
+<hr></div>
+
+<div id="talkCondDiv"><hr>
+Character 1:<select name="sel_char1Cond" id="sel_char1Cond" class="Char"></select><br>
+Character 2:<select name="sel_char2Cond" id="sel_char2Cond" class="Char"></select><br>
+<input type="checkbox" name="ckb_char1OnlyCond">Only char. 1 can initiate talk<br>
+<hr></div>
+
+<div id="battledCondDiv"><hr>
+Triggered Id:<input type="text" name="txt_battleQuoteTrigId" value="0x01"><br>
+<hr></div>
+
+<div id="fireCondDiv">
+<hr></div>
+
+<div id="poisonCondDiv">
+Direction:
+<select name="sel_trapDirect">
+  <option>Left 0</option>
+  <option>Right 1</option>
+  <option>Down 2</option>
+  <option>Up 3</option>
+</select>
+<hr></div>
+
+<div id="ballistaeCondDiv">
+<select name="sel_ballistaeType">
+  <option>Normal 34</option>
+  <option>Iron 35</option>
+  <option>Killer 36</option>
+</select>
+<hr></div>
+</div>
+
+<div id="eventIdForConditionsDiv">
+Event Id:
+<select name="sel_eventIdSource" id="sel_eventIdSource" onchange="toggleVisibilityOfEventIdFormElements();">
+  <option>None</option>
+  <option>Existing Id</option>
+  <option>New Temporary Id</option>
+  <option>New Permanent Id</option>
+</select><br>
+
+<select name="sel_availableEventIdsList" id="sel_availableEventIdsList" class="AvailableEventIds"></select>
+<select name="sel_availablePermEventIdsList" id="sel_availablePermEventIdsList" class="AvailablePermEventIds"></select>
+<select name="sel_availableCondIdsList" id="sel_availableCondIdsList" class="AvailableCondIds"></select>
+
+<div id="newEventIdNameDiv">New Id Name:
+<input type="text" id="txt_newEventIdLabel" value=""><br>
+</div>
+<div id="existingEventIdDiv">Existing Ids:
+<select name="sel_existingEventIdsList" id="sel_existingEventIdsList" class="ExistingEventIds"></select><br>
+</div>
+
+<br><input type="radio" name="rd_existingEvent" onclick="uncheck(document.conditionForm.rd_newEvent);" checked="checked">
+Existing Event: 
+<select class="EventBlocks" name="sel_eventPointer"
+    onclick="uncheck(document.conditionForm.rd_newEvent);
+    document.conditionForm.rd_existingEvent.checked = 'checked';">
+  <option>BeginningScene</option>
+  <option>EndingScene</option>
+</select><br>
+<input type="radio" name="rd_newEvent" onclick="uncheck(document.conditionForm.rd_existingEvent);">
+New Event:
+<input type="text" name="txt_eventPointer"
+    onclick="uncheck(document.conditionForm.rd_existingEvent);
+    document.conditionForm.rd_newEvent.checked = 'checked';"><br>
+</div>
+<input type="button" value="Add" onclick="getCondEventData();">
+</form>
+
+
+
+<!-- Hidden inputs to keep track of x and y positions for the event adder form-->
+<input type="hidden" id="hd_selectedXPosField">
+<input type="hidden" id="hd_selectedYPosField">
+<input type="hidden" id="hd_selectedEventForm">
+
+<div id="eventWriterWrapper">
+
+<form id="eventAdderForm" name="eventAdderForm" class="editForm">
+<span class="boldedTitle">Add an action: </span><br>
+<input type="checkbox" name="ckb_advancedSearch" onclick="toggleEventSearchType();">Code Search<br>
+<div id="eventAdvancedSearchDiv">
+Search: <input type="text" name="eventCodeSearchBox" 
+    oninput="suggestEventForms(document.eventAdderForm.eventCodeSearchBox.value, getEventCodeDictionary());" value=""><br>
+<select id="sel_eventCodeSearchForm" size="5"
+    onclick="setEventForm(eventCodeDictionary[getSelectedOption(document.eventAdderForm.sel_eventCodeSearchForm)]);"></select><br>
+</div>
+<div id="eventCategorySearchDiv">
+<input type="hidden" name="txt_eventInsertionPoint" size="5" value="" readonly>
+<!--input type="button" value="Insert At End" onclick="document.eventAdderForm.txt_eventInsertionPoint.value = '';"-->
+Category:<br>
+<select name="sel_genEvent" id="sel_genEvent" onchange="getNextEvent('sel_genEvent');">
+  <option>Character/Units</option>
+  <option>Camera/Cursor</option>
+  <option>Screen/Backgrounds/CGs</option>
+  <option>Music</option>
+  <option>Text</option>
+  <option>Items/Money</option>
+  <option>Map</option>
+  <option>Weather</option>
+  <option>Game/Chapter Endings</option>
+  <option>Stall Events</option>
+  <option>Conditions</option>
+  <option>Events/ASM</option>
+  <option>Special Effects</option>
+</select><br>
+
+
+Sub-Category:<div id="secondEventTier">
+
+<select id="sel_characterEvent" onchange="getNextEvent('sel_characterEvent');">
+  <option>Load/Appear</option>
+  <option>Remove/Kill</option>
+  <option>Move</option>
+  <option>Change_Sides</option>
+  <option>Change_AI</option>
+  <option>Rescue/Drop</option>
+  <option>Status</option>
+  <option>Fight</option>
+  <option>Replace</option>
+</select>
+
+<select id="sel_cameraEvent" onchange="getNextEvent('sel_cameraEvent');">
+  <option>Focus_View of Camera</option>
+  <option>Stationary/Moving Camera</option>
+  <option>Flash_Cursor</option>
+  <option>Move_Cursor</option>
+  <option>Remove_Cursor</option>
+</select>
+
+<select id="sel_screenEvent" onchange="getNextEvent('sel_screenEvent');">
+  <option>Fade In/Out</option>
+  <option>Fade_Set</option>
+  <option>Load_Background</option>
+  <option>Load_CG</option>
+  <option>Remove_Background</option>
+  <option>Remove_CG</option>
+</select>
+
+<select id="sel_musicEvent" onchange="getNextEvent('sel_musicEvent');">
+  <option>Change_Music</option>
+  <option>Fade_Out_Music</option>
+  <option>Adjust_Volume</option>
+  <option>Sound Effects</option>
+</select>
+
+<select id="sel_textEvent" onchange="getNextEvent('sel_textEvent');">
+  <option>Regular_Convos</option>
+  <option>CG_Convos</option>
+  <option>Textboxes</option>
+  <option>Remove_Text</option>
+</select>
+
+<select id="sel_itemsEvent" onchange="getNextEvent('sel_itemsEvent');">
+  <option>Give_Item</option>
+  <option>Give_Money</option>
+</select>
+
+<select id="sel_mapEvent" onchange="getNextEvent('sel_mapEvent');">
+  <option>Load_Map</option>
+  <option>Default_Map_Change</option>
+  <option>Map_Change_By_Position</option>
+  <option>Map_Visibility</option>
+</select>
+
+<select id="sel_weatherEvent" onchange="getNextEvent('sel_weatherEvent');">
+  <option>Fog_of_War</option>
+  <option>Set_Weather</option>
+</select>
+
+<select id="sel_gameEvent" onchange="getNextEvent('sel_gameEvent');">
+  <option>Move_To_Next_Chapter</option>
+  <option>Move_To_Next_Chapter_Direct</option>
+  <option>Game_Over</option>
+  <option>End_Game</option>
+  <option>End_Lyn_Mode</option>
+</select>
+
+<select id="sel_stallEvent" onchange="getNextEvent('sel_stallEvent');">
+  <option>Time_Based_Stall</option>
+  <option>Event_Based_Stall</option>
+</select>
+
+<select id="sel_specialEvent" onchange="getNextEvent('sel_specialEvent');">
+  <option>Lightning_Bolt</option>
+  <!--<option>Map_Spells</option>-->
+  <option>Sword_Slash</option>
+  <option>Rumble</option>
+  <option>Quintessence_Effect</option>
+</select>
+
+<select id="sel_conditionsEvent" onchange="getNextEvent('sel_conditionsEvent');">
+  <option>If_Event_Triggered</option>
+  <option>If_Before_Turn_X</option>
+  <option>If_Character_Active</option>
+  <option>If_Character_Dead</option>
+  <option>If_Character_On_Map</option>
+  <option>If_Yes_Chosen</option>
+  <option>If_Player_Phase</option>
+  <option>If_Lucky</option>
+  <option>If_Male_Tactician</option>
+  <option>If_Eliwood_Mode</option>
+  <option>If_Hector_Mode</option>
+  <option>If_Tutorial_Mode</option>
+  <option>Else</option>
+  <option>Endif</option>
+</select>
+
+<select id="sel_eventsEvent" onchange="getNextEvent('sel_eventsEvent');">
+  <option>Event_Ids</option>
+  <option>Call Event</option>
+  <option>Jump to Event</option>
+  <option>Unskippable_Event</option>
+  <option>ASM_Routine</option>
+</select>
+
+</div>
+</div>
+
+<hr><div id="thirdEventTier">
+<span id="lb_thirdEventTier">Action:</span>
+<div id="loadEventDiv">
+<select name="sel_loadType" id="sel_loadType" onchange="setRequiredInfo('load');">
+  <option>Load_Unit</option>
+  <option>Reappear</option>
+  <option>Flicker_In</option>
+  <option>Warp_In</option>
+  <option>Thief Entrance</option>
+  <option>Assassin Entrance</option>
+  <option>Set_Visible</option>
+</select><br><br>
+</div>
+
+<div id="removeEventDiv">
+<select name="sel_removeType" id="sel_removeType" onchange="setRequiredInfo('remove');">
+  <option>Disappear</option>
+  <option>Kill</option>
+  <option>Flicker_Out</option>
+  <option>Warp_Out</option>
+  <option>Set_Invisible</option>
+  <option>Clear_All_Units</option>
+</select><br><br>
+</div>
+
+<div id="moveEventDiv">
+<select name="sel_moveType" id="sel_moveType" onchange="setRequiredInfo('move');">
+  <option>Move_To_Location</option>
+  <option>Move_Next_To_Character</option>
+  <option>Move_Main_Lord</option>
+  <option>Reposition</option>
+  <option>Manual_Move</option>
+</select><br><br>
+</div>
+
+<div id="rescueEventDiv">
+<select name="sel_rescueType" id="sel_rescueType" onchange="setRequiredInfo('rescue');">
+  <option>Rescue</option>
+  <option>Drop</option>
+</select><br><br>
+</div>
+
+<div id="fightEventDiv">
+<select name="sel_fightType" id="sel_fightType" onchange="setRequiredInfo('fight');">
+  <option>Scripted_Fight</option>
+  <option>Scripted_Heal/Dance</option>
+  <option>Uncontrolled_Fight</option>
+</select><br><br>
+</div>
+
+<div id="statusEventDiv">
+Status:
+<select name="sel_statusType" id="sel_statusType" onchange="setRequiredInfo('status');">
+  <option>Invisible</option>
+  <option>Grayed_Out</option>
+  <option>Rescuer</option>
+  <option>Rescued</option>
+</select><br>
+</div>
+
+<div id="give_itemEventDiv">
+<select name="sel_give_itemType" id = "sel_give_itemType" onchange="setRequiredInfo('give_item');">
+  <option>Give_To_Active_Character</option>
+  <option>Give_To_Specific_Character</option>
+  <option>Give_To_Main_Lord</option>
+</select><br>
+</div>
+
+<div id="load_cgEventDiv">
+<select name="sel_load_cgType" id="sel_load_cgType" onchange="setRequiredInfo('load_cg');">
+  <option>Default_Fade_into_CG</option>
+  <option>Fade_into_CG_From_Background</option>
+</select><br>
+</div>
+
+<div id="remove_backgroundEventDiv">
+<br>Remove text and/or background<br>
+</div>
+
+<div id="remove_cgEventDiv">
+<select name="sel_remove_cgType" id="sel_remove_cgType" onchange="setRequiredInfo('remove_cg');">
+  <option>Default_Remove_CG</option>
+  <option>Fade_from_CG_to_Background</option>
+  <option>Fade_from_CG_to_Map</option>
+</select><br>
+</div>
+
+<div id="regular_convosEventDiv">
+<select name="sel_regular_convosType" id="sel_regular_convosType" onchange="setRequiredInfo('regular_convos');">
+  <option>Add_Text (Default)</option>
+  <option>Add_Mode_Based_Text</option>
+  <option>Add_Gender_Based_Text</option>
+  <option>Add_Event_Based_Text</option>
+  <option>Add_ASM_Based_Text</option>
+</select><br>
+</div>
+
+<div id="map_visibilityEventDiv">
+<select name="sel_map_visibilityType" id="sel_map_visibilityType" onchange="setRequiredInfo('map_visibility');">
+  <option>Hide_Map</option>
+  <option>Show_Map</option>
+</select><br>
+</div>
+
+<div id="textboxesEventDiv">
+<select name="sel_textboxesType" id="sel_textboxesType" onchange="setRequiredInfo('textboxes');">
+  <option>Scroll</option>
+  <option>Speech_Bubble</option>
+  <option>Small_Brown_Box</option>
+</select><br>
+</div>
+
+<div id="set_weatherEventDiv">
+<select name="sel_weatherType" id="sel_weatherType" onchange="setRequiredInfo('set_weather');">
+  <option>Clear 0</option>
+  <option>Snow 1</option>
+  <option>SnowStorm 2</option>
+  <option>BlueBackground 3</option>
+  <option>Rain 4</option>
+  <option>Flames 5</option>
+  <option>SandStorm 6</option>
+  <option>Clouds 7</option>
+</select>
+</div>
+
+<div id="genericEventEntryDiv">
+
+<div id="addMoreTextDiv">
+<input type="checkbox" name="ckb_addMoreText" onclick="toggleTextBackgroundForm();">
+<span id="lb_moreTextEntry">Addition to previous text</span><br>
+<input type="checkbox" name="ckb_unskippableText">Unskippable by player<br><br>
+</div>
+
+<div id="genericRadioOptionsDiv">
+<input type="radio" name="rd_genericRadio1" onclick="uncheck(document.eventAdderForm.rd_genericRadio2);" checked="checked">
+<span id="lb_genericRadio1Entry"></span><br>
+<input type="radio" name="rd_genericRadio2" onclick="uncheck(document.eventAdderForm.rd_genericRadio1);">
+<span id="lb_genericRadio2Entry"></span><br>
+</div>
+
+<div id="unitBlockEntryDiv">
+<span id="lb_unit_BlockEntry">Unit Block:</span>
+<select class="UnitBlocks" name="sel_unitBlockEntry">
+  <option>Units</option>
+</select><br>
+</div>
+
+<div id="multiUnitBlockEntryDiv">
+Unit Block(s):<br>
+<select class="UnitBlocks" name="sel_multiUnitBlockEntry" id="sel_multiUnitBlockEntry" size="3" multiple>
+  <option selected="selected">Units</option>
+</select><br>
+</div>
+
+<div id="chapterIdEntryDiv">
+<span id="lb_chapter_IdEntry">Chapter Id:</span>
+<select class="ChaptIdsList" name="sel_chapterIdEntry"></select><br>
+</div>
+
+<div id="spellsEntryDiv">
+Spells: <!--<select name="sel_spellsEntry" class="SpellList"></select>--> Not working<br>
+</div>
+
+<span id="lb_charOrPos"></span>
+
+<div id="characterEntryDiv">
+<input type="radio" name="rd_characterEntry" onclick="uncheck(document.eventAdderForm.rd_posEntry);" 
+    style="display:none" checked="checked">
+<span id="lb_characterEntry">Character:</span>
+<select class="Char" name = "sel_characterEntry" 
+    onclick="uncheck(document.eventAdderForm.rd_posEntry);
+    document.eventAdderForm.rd_characterEntry.checked = 'checked';"></select><br></div>
+
+<div id="posEntryDiv">
+<input type="radio" name="rd_posEntry" onclick="uncheck(document.eventAdderForm.rd_characterEntry);" style="display:none">
+<span id="lb_positionEntry">Position:</span>
+<input type="text" name="txt_xPosEntry" id="txt_xPosEntry" size="3" value="0"
+     onclick="setSelectedPosIds('txt_xPosEntry','txt_yPosEntry');
+     uncheck(document.eventAdderForm.rd_characterEntry);
+     document.eventAdderForm.rd_posEntry.checked = 'checked';" readonly>,
+<input type="text" name="txt_yPosEntry" id="txt_yPosEntry" size="3" value="0"
+     onclick="setSelectedPosIds('txt_xPosEntry','txt_yPosEntry');
+     uncheck(document.eventAdderForm.rd_characterEntry);
+     document.eventAdderForm.rd_posEntry.checked = 'checked';" readonly><br>
+</div>
+
+<div id="endPosEntryDiv">
+<span id="lb_end_PositionEntry">Move To:</span>
+<input type="text" name="txt_xEndPosEntry" id="txt_xEndPosEntry" size="3" value="0"
+     onclick="setSelectedPosIds('txt_xEndPosEntry','txt_yEndPosEntry');" readonly>,
+<input type="text" name="txt_yEndPosEntry" id="txt_yEndPosEntry" size="3" value="0"
+     onclick="setSelectedPosIds('txt_xEndPosEntry','txt_yEndPosEntry');" readonly><br>
+</div>
+
+<div id="character2EntryDiv" style="display:none">
+<span id="lb_character_2Entry">Character:</span>
+<select name="sel_character2Entry" id="sel_character2Entry" class="Char"></select><br>
+</div>
+
+<div id="fadeStyleEntryDiv">
+Fade Style:
+<input type="radio" name="rd_fadeStyleIn" checked="checked" onclick="uncheck(document.eventAdderForm.rd_fadeStyleOut);">In
+<input type="radio" name="rd_fadeStyleOut" onclick="uncheck(document.eventAdderForm.rd_fadeStyleIn);">Out<br>
+</div>
+
+<div id="fadeColorEntryDiv">
+<span id="lb_fade_ColorEntry">Fade Color:</span>
+<input type="radio" name="rd_fadeColorBlack" checked="checked" onclick="uncheck(document.eventAdderForm.rd_fadeColorWhite);">Black
+<input type="radio" name="rd_fadeColorWhite" onclick="uncheck(document.eventAdderForm.rd_fadeColorBlack);">White<br>
+</div>
+
+<input type="checkbox" name="ckb_musicEntry" id="ckb_musicEntry">
+<div id="musicEntryDiv" style="display:none">
+<span id="lb_musicEntry">Music/Sound Effect:</span><br>
+<select id="sel_musicEntry" name = "sel_musicEntry" class="MusicList"></select><br>
+</div>
+
+<div id="timeEntryDiv">
+<input type="checkbox" name = "ckb_timeEntry" style="display:none">
+<span id="lb_timeEntry">Time/Speed:</span> <input type="text" pattern="(0x)?[0-9]+" name="txt_timeEntry" id="txt_timeEntry" size="4" value="5"><br>
+<span id="lb_time_DescriptionEntry"></span><br>
+</div>
+
+<div id="sideEntryDiv">
+Side:
+<select name="sel_sideType" id="sel_sideType">
+  <option>Ally</option>
+  <option>Enemy</option>
+  <option>NPC</option>
+</select>
+</div>
+
+<div id="itemEntryDiv">
+Item: <select name="sel_giveItem" class="Item"></select><br>
+</div>
+
+<div id="eventIdEntryDiv">
+<span id="lb_event_IdEntry">Event Id:</span>
+<input type="text" name="txt_eventIdEntry" value="0" size=5><br>
+</div>
+
+<div id="eventBlocksEntryDiv">
+Event:
+<select name = "sel_eventBlocksEntry" class="EventBlocks">
+  <option>BeginningScene</option>
+  <option>EndingScene</option>
+</select>
+</div>
+
+<div id="aiEntryDiv">
+New AI: 
+<select name="sel_aiEntry">
+  <option>NoAI</option>
+  <option>PursueWithoutHeed</option>
+  <option>Guard</option>
+  <option>AttackInRange</option>
+  <option>DestroyVillages</option>
+  <option>HealUnits</option>
+  <option>StealFromUnits</option>
+  <option>StealFromChests</option>
+  <option>TalkToLord</option>
+  <option>AttackWall</option>
+  <option>SeizeThrone</option>
+</select>
+</div>
+
+<input type="checkbox" name="ckb_openTextEntry">
+<div id="openTextEntryDiv">
+<span id="lb_textEntry">Text:</span>
+<input type="text" name="txt_openTextEntry"><br>
+</div>
+
+<div id="openTextEntry2Div">
+<span id="lb_textEntry2">Text:</span>
+<input type="text" name="txt_openTextEntry2"><br>
+</div>
+
+<div id="textboxPosEntryDiv"><br>
+<input type="hidden" name="hd_xPosTextboxEntry" value="0">
+<input type="hidden" name="hd_yPosTextboxEntry" value="0">
+Upper-Left Corner: 
+<input type="text" name="txt_xPosTextboxEntry" id="txt_xPosTextboxEntry" size="3" value="0" readonly>,
+<input type="text" name="txt_yPosTextboxEntry" id="txt_yPosTextboxEntry" size="3" value="0" readonly><br>
+<div id="textboxPosImagesDiv">
+<canvas id="textboxPosEntryCanvas" width="240" height="160">
+</canvas>
+<img src="Texboxes/Textbox_Small.png" id="SmallTextboxImg" class="unitImg"
+  onMouseUp="placeTextboxPosEntry();">
+<img src="Texboxes/Textbox_Medium.png" id="MediumTextboxImg" class="unitImg"
+  onMouseUp="placeTextboxPosEntry();">
+<img src="Texboxes/Textbox_Large.png" id="LargeTextboxImg" class="unitImg"
+  onMouseUp="placeTextboxPosEntry();">
+</div><br>
+Textbox Size:
+<select name="sel_textboxSize" onchange="updateTextboxPosEntryImage();">
+  <option>Small</option>
+  <option>Medium</option>
+  <option>Large</option>
+</select>
+</div>
+
+<div id="genericCheckboxDiv"><br>
+<input type="checkbox" name="ckb_genericCheckbox">
+<span id="lb_genericCheckboxEntry">Focus view on cursor</span>
+</div>
+
+<div id="manualConditionIdDiv"><br>
+<input type="checkbox" name="ckb_manualConditionId">Use this Condition Id: <input type="text" name="txt_manualConditionId" size=5>
+</div>
+
+<div id="additionalConditionsDiv"><br>
+<input type="checkbox" name="ckb_additionalConditions">Add additional condition(s)
+</div>
+
+<input type="checkbox" name="ckb_backgroundEntry">
+<div id="backgroundEntryDiv">
+Background:<br>
+<select id="sel_backgroundEntry" name="sel_backgroundEntry" class="BackgroundList"></select><br>
+</div>
+
+<div id="manualMoveEntryDiv"><br>
+Select Manual Move:<br>
+<input type="radio" name="rd_existingManualMove" onclick="uncheck(document.eventAdderForm.rd_newManualMove);">
+Existing: 
+<select name="sel_manualMoveBlockEntry" class="ManualMoveBlocks"
+    onclick="uncheck(document.eventAdderForm.rd_newManualMove);
+    document.eventAdderForm.rd_existingManualMove.checked = 'checked';"></select><br>
+<input type="radio" name="rd_newManualMove" 
+    onclick="uncheck(document.eventAdderForm.rd_existingManualMove);" checked="checked">
+New:
+<input type="text" name="txt_newManualMoveName"
+    onclick="uncheck(document.eventAdderForm.rd_existingManualMove);
+    document.eventAdderForm.rd_newManualMove.checked = 'checked';"><br>
+</div>
+
+<div id="scriptedFightEntryDiv"><br>
+Select Scripted Event:<br>
+<input type="radio" name="rd_existingScriptedFight" onclick="uncheck(document.eventAdderForm.rd_newScriptedFight);">
+Existing: <select name="sel_scriptedFightBlockEntry" class="ScriptedFightBlocks"></select><br>
+<input type="radio" name="rd_newScriptedFight" onclick="uncheck(document.eventAdderForm.rd_existingScriptedFight);" checked="checked">
+New:
+<input type="text" name="txt_newScriptedFightName"><br>
+</div>
+
+<div id="pauseUntilFinishedDiv"><br>
+<input type="checkbox" name="ckb_pauseUntilFinished">
+Add Event Pause <a href="javascript:alert('This will pause the game until all\n
+preceding unit-based actions are completed.');">[Info]</a>
+</div>
+
+<div id="removeTextDiv"><br>
+<input type="checkbox" name="ckb_removeAllText" 
+    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeTextbox);">
+Remove text and background<br>
+<input type="checkbox" name="ckb_removeOnlyTextBubble" 
+    onclick="uncheck(document.eventAdderForm.ckb_removeAllText); uncheck(document.eventAdderForm.ckb_removeTextbox);">
+Remove text bubbles only.<br>
+</div>
+
+<div id="removeTextboxDiv"><br>
+<input type="checkbox" name="ckb_removeTextbox" 
+    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeAllText);">
+Remove textbox<br>
+</div>
+
+</div>
+</div><br>
+
+<div id="closeActionDiv"><hr>
+Close an action:<br>
+<select id="sel_closeActionSet" size="5" multiple></select><br>
+<input type="button" value="Move up" onclick="moveCloseActionUp();">
+<!--input type="button" value="Move down" onclick="moveCloseActionDown();"-->
+<hr>
+</div>
+
+<input type="button" value="Add to Event" onclick="addEventAction(getEventActionData());">
+</form>
+
+<form id="scriptedFightAdderForm" name="scriptedFightAdderForm" class="editForm">
+<input type="hidden" name="hd_scriptedFightInsertionPoint" value="">
+<span class="boldedTitle">Add an attack: </span><br>
+<input type="radio" name="rd_Attacker" checked="checked"
+    onclick="uncheck(document.scriptedFightAdderForm.rd_Defender);">
+    <span class="spaceRight">Attacker</span>
+<input type="radio" name="rd_Defender"
+    onclick="uncheck(document.scriptedFightAdderForm.rd_Attacker);">Defender<hr>
+Action:
+<select name="sel_scriptedAction" onchange="toggleScriptedDamageVisibility();">
+  <option>Hit</option>
+  <option>Critical</option>
+  <option>Miss</option>
+  <option>No_Damage</option>
+  <option>Hurt_Itself</option>
+  <option>Poison</option>
+  <option>Silencer</option>
+  <option>Heal</option>
+</select><br><br>
+<div id="scriptedDamageDiv"><span id="lb_scriptedDamage">Damage:</span>
+<input type="text" pattern="[0-9]+" name="txt_damage" size="4" value="10"><br></div>
+<input type="checkbox" name="ckb_lastAttack">This is the last attack.<br><br>
+<input type="button" value="Add Attack" onclick="addScriptedAttack();">
+</form>
+
+<form id="manualMoveAdderForm" name="manualMoveAdderForm" class="editForm">
+<span class="boldedTitle">Add a move: </span>
+<input type="button" name="btn_undoLastManualMove" value="Undo" onclick="undoLastManualMove();"> <br><br>
+Arrow Color: 
+<select name="sel_color">
+  <option>Orange</option>
+  <option>Blue</option>
+  <option>Red</option>
+  <option>Green</option>
+</select><br><br>
+<div id="movementButtons">
+  <input type="button" value="↑" class="spaceLeft" onclick="addManualMovement('y',-1);"><br>
+  <input type="button" value="←" onclick="addManualMovement('x',-1);">
+  <input type="button" value="!" class="spaceVertical" onclick="addManualMovement('notice',0);">
+  <input type="button" value="→" onclick="addManualMovement('x',1);"><br>
+  <input type="button" value="↓" class="spaceLeft" onclick="addManualMovement('y',1);"><br>
+</div><hr>
+<div class="spaceVertical">
+<span class="boldedTitle">Highlight unit</span> <a href='javascript:alert("The unit will move in place as if the map cursor is \"highlighting\" it.");'>[Info]</a><br><br>
+Time: <input type="text" name="txt_highlightTime" value="70" pattern="[0-9A-Fa-f]+" size="5"><br>
+<input type="button" value="Add Highlight" class="spaceVertical" 
+    onclick="addManualMovement('highlight(0x' + document.manualMoveAdderForm.txt_highlightTime.value + ')', 0);">
+</div><hr>
+<div class="spaceVertical">
+<span class="boldedTitle">Movement speed</span><br><br>
+Speed: <input type="text" name="txt_movementSpeed" pattern="[0-9A-Fa-f]+" size="5" value="0"><br>
+(Normal move speed = 0)<br>
+(Otherwise, lower = slower)<br>
+<input type="button" value="Change Speed" class="spaceVertical"
+    onclick="addManualMovement('speed(0x' + document.manualMoveAdderForm.txt_movementSpeed.value + ')', 0);">
+</div>
+</form>
+
+</div>
+
+
+<!-- Map stuff on the right
+     This holds the mage image and map selection form together-->
+<div id="mapWrapper">
+<!-- Holds all the images loaded onto the map, like the load and start pointer and unit sprites-->
+<div id="mapImagesDiv" class="ImageHolder">
+<!-- Gets information from the map clicks-->
+<div id="mapClickDiv" onclick="getMapCoord(event);">
+<!-- Canvas is where the actual map image is loaded-->
+<canvas id="mapCanvas">
+Your browser does not support the canvas element.<br>
+Try using Firefox.
+</canvas>
+</div>
+
+<!-- Load and start position pointers-->
+<div id="unitPointerImgDiv">
+<img src="MapPointers/LoadPointer.png" id="LoadPointer" class="unitImg" onclick="setLoadCoord(-2);">
+<img src="MapPointers/StartPointer.png" id="StartPointer" class="unitImg" onclick="setLoadCoord(-1);">
+</div>
+<div id="eventPointerImgDiv">
+<div id="genEventImgDiv">
+<img src="MapPointers/StartPointer.png" id="GenPointer" class="unitImg" onclick="getMapCoord(event);">
+<img src="MapPointers/CAMPointer.png" id="CAMPointer" class="unitImg" onclick="getMapCoord(event);">
+</div>
+<div id="manualMoveImgDiv">
+<img src="MapPointers/ManualMoveStartPointer.png" id="ManualMoveStartPointer" class="unitImg" onclick="getMapCoord(event);">
+<img src="MapPointers/ManualMoveEndPointer.png" id="ManualMoveEndPointer" class="unitImg" onclick="getMapCoord(event);">
+</div>
+</div>
+
+</div>
+
+<!-- Choosing the map to use-->
+<div class="mapSelect">
+<form name="myCustomMapForm">
+  <input type="file" name="customMapImage" accept="image/*" style="width:200px;"><br>
+  <input type="button" name="uploadMapButton" value="Load Custom Map" onClick='uploadMap();'><br>
+  <input type="hidden" name="mapImageFile" value="ChapterMaps/0.PNG" id="hiddenMap"/>
+ </form><br>
+<form name="myMapSelectForm">
+  <select name="mapSelection" class="MapChoices"></select><br>
+  <input type="button" value="Load Selected Map" onclick="loadSelectedMap();">
+</form><br>
+<!-- Last click position-->
+<form name="mapClickPosForm" id="mapClickPosForm">
+X: <input type="text" name="txt_mouseX" class="MapClickPos" value="0" size="4" readonly>  
+Y: <input type="text" name="txt_mouseY" class="MapClickPos" value="0" size="4" readonly><br>
+</form>
+<form name="mapGridLineToggleForm">
+  <input type="checkbox" name="toggleGridCheck" onclick="draw();">Toggle Grid Lines
+</div>
+</div>
+
+<!-- Unit block text output -->
+<div id="unitBlockDiv" class="outDisplay">
+<div id="unitBlock0">
+<div id="b_name0" class="b_name">Units:<a href="javascript:toggleBlock(0);">
+<img src="BlockIcons/Minimize.png" id="minMaxImg0" class="minMaxImg">
+</a>
+<a href="javascript:toggleInvisibleUnits(0);">
+<img src="BlockIcons/Visible.png" id="visImg0" class="minMaxImg">
+</a>
+</div>
+<div id="b_list0"> </div>
+<div id="b_end0">UNIT</div>
+</div>
+<!-- 
+<div id="unitBlock1">
+<div id="b_name1" class="b_name">Bad:<a href="javascript:toggleBlock(1);">
+<img src="BlockIcons/Minimize.png" id="minMaxImg1" class="minMaxImg">
+</a>
+<a href="javascript:toggleInvisibleUnits(1);">
+<img src="BlockIcons/Visible.png" id="visImg1" class="minMaxImg">
+</a>
+</div>
+<div id="b_list1"> </div>
+<div id="b_end1">UNIT</div>
+</div> -->
+</div>
+
+
+<div id="eventBlockWrapper">
+
+<div id="eventBlockDiv" class="outDisplay">
+<div id="eventBlock0">
+<div id="e_name0" class="b_name">BeginningScene:<a href="javascript:toggleEventBlock(0);">
+<img src="BlockIcons/Minimize.png" id="minMaxImgE0" class="minMaxImg">
+</a>
+</div>
+<div id="e_list0">
+<div id="action-1_0">
+<a href='javascript:setEventInsertionPoint(-1,0);'>Insert At Beginning</a>&nbsp;&nbsp;
+<a href='javascript:setEventInsertionPoint("",0);'>Insert At End</a>
+</div>
+</div>
+</div>
+
+<div id="eventBlock1">
+<div id="e_name1" class="b_name">EndingScene:<a href="javascript:toggleEventBlock(1);">
+<img src="BlockIcons/Minimize.png" id="minMaxImgE1" class="minMaxImg">
+</a>
+</div>
+<div id="e_list1"> 
+<div id="action-1_1"><a href='javascript:setEventInsertionPoint(-1,1);'>Insert At Beginning</a>&nbsp;&nbsp;
+<a href='javascript:setEventInsertionPoint("",1);'>Insert At End</a>
+</div>
+</div>
+</div>
+</div>
+
+<div id="manualMoveBlockDiv" class="outDisplay"></div>
+
+<div id="scriptedFightBlockDiv" class="outDisplay"></div>
+
+</div>
+
+<div id="condBlockDiv" class="outDisplay">
+<div id="turnCondBlock">
+<div id="turn_name" class="b_name">Turn_events:
+<a href="javascript:toggleEventBlock('Turn');">
+<img src="BlockIcons/Minimize.png" id="minMaxImgTurn" class="minMaxImg">
+</a>
+</div>
+<div id="turn_list"></div>
+</div>
+
+<div id="locationCondBlock">
+<div id="location_name" class="b_name">Location_events:
+<a href="javascript:toggleEventBlock('Location');">
+<img src="BlockIcons/Minimize.png" id="minMaxImgLocation" class="minMaxImg">
+</a>
+</div>
+<div id="location_list"></div>
+</div>
+
+<div id="characterCondBlock">
+<div id="character_name" class="b_name">Character_events:
+<a href="javascript:toggleEventBlock('Character');">
+<img src="BlockIcons/Minimize.png" id="minMaxImgCharacter" class="minMaxImg">
+</a>
+</div>
+<div id="character_list"></div>
+</div>
+
+<div id="eventCondBlock">
+<div id="event_name" class="b_name">Misc_events:
+<a href="javascript:toggleEventBlock('Event');">
+<img src="BlockIcons/Minimize.png" id="minMaxImgEvent" class="minMaxImg">
+</a>
+</div>
+<div id="event_list"></div>
+</div>
+
+<div id="trapsCondBlock">
+<div id="traps_name" class="b_name">TrapData:
+<a href="javascript:toggleEventBlock('Traps');">
+<img src="BlockIcons/Minimize.png" id="minMaxImgTraps" class="minMaxImg">
+</a>
+</div>
+<div id="traps_list"></div>
+</div>
+
+</div>
+
+<!-- Event Writer Output-->
+<textarea id="txa_eventOutput" rows="20" cols="50">
+<<<<<<<<</textarea>
+
+<!-- Holds all the Definition Creator stuff-->
+<div id="customDefWrapper">
+<h2>Form of a definition:<br>
+#define <span style="color:blue">Name</span> <span style="color:orange">0x00</span><br>
+#define <span style="color:blue">Definition</span> <span style="color:orange">Id Number</span></h2>
+<form name="defMakerForm">
+Definition Type:
+<select name="sel_defType" onchange="updateDefType();">
+  <option>Character</option>
+  <option>Class</option>
+  <option>Item</option>
+</select><br>
+<span style="color:blue">Definition:</span> <input type="text" name="txt_customDef" placeholder="Character/Class/Item"><br>
+<span style="color:orange">Id Number:</span> <select name="sel_origDef" id="sel_origDef"></select><br>
+<!--input type="radio" name="rd_useExistingFE8Def" checked="checked" onclick="toggleDefNumSource(0);">
+<input type="radio" name="rd_useDefNumber" onclick="toggleDefNumSource(1);">
+<input type="text" name="txt_customDefNumber" pattern="[0-9]*" disabled="disabled"-->
+<input type="button" name="btn_addCustomDef" value="Add Definition" onclick="addCustomDef();"><br><br>
+Def. File Name: <input type="text" name="txt_customDefName" placeholder="MyHackDefinitions">
+<input type="button" name="btn_addNewDefsToList" value="Add to Main List" onclick="addNewDefsToList();"><br>
+<input type="hidden" name="hdn_characterDefOutput" id="hdn_characterDefOutput" value="//Characters">
+<input type="hidden" name="hdn_classDefOutput" id="hdn_classDefOutput" value="//Classes">
+<input type="hidden" name="hdn_itemDefOutput" id="hdn_itemDefOutput" value="//Items">
+<textarea id="txa_finalDefOutput" rows="20" cols="50" oninput="saveDefOutput();"><<<<<<<<</textarea>
+</form>
+</div>
+
+<!-- To prevent the page from collasping on itself (due to all those floating divs) -->
+<div style="clear:both;"> </div>
+
+<!-- Stores all the selectable definitions, FE8 not supported yet-->
+<div id="storedDefContentDiv">
+<!--
+<iframe id="FE8_Def" name="FE8_Def" src="index.php?act=Pages&pid=4.html"></iframe>
+<iframe id="FE8_Def" name="FE8_Def" src="index.php?act=Pages&pid=5.html"></iframe>
+<iframe id="Zhack_Def" name="Zhack_Def" src="index.php?act=Pages&pid=6.html"></iframe>
+<iframe id="Pointers_Def" name="Pointers_Def" src="index.php?act=Pages&pid=7.html"></iframe>
+<iframe id="MusicFE8_Def" name="MusicFE8_Def" src="index.php?act=Pages&pid=9.html"></iframe>
+<iframe id="FE8Backgrounds_Def" name="FE8Backgrounds_Def" src="index.php?act=Pages&pid=10.html"></iframe>
+<iframe id="FE8_ChaptIds_Def" name="FE8_ChaptIds_Def" src="index.php?act=Pages&pid=11.html"></iframe>
+-->
+</div>
+</body>
+</html>
