@@ -657,7 +657,7 @@ Status:
 </select><br>
 </div>
 
-<div id="remove_backgroundEventDiv">
+<div id="remove_backgroundEventDiv"> 
 <br>Remove text and/or background<br>
 </div>
 
@@ -932,10 +932,10 @@ Add Event Pause <a href="javascript:alert('This will pause the game until all\n
 preceding unit-based actions are completed.');">[Info]</a>
 </div>
 
-<div id="removeTextDiv"><br>
+<div id="removeTextDiv" hidden><br>
 <input type="checkbox" name="ckb_removeAllText" 
-    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeTextbox);">
-Remove text and background<br>
+    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeTextbox);" (hidden>
+(NOT WORKING) Remove text and background<br>
 <input type="checkbox" name="ckb_removeOnlyTextBubble" 
     onclick="uncheck(document.eventAdderForm.ckb_removeAllText); uncheck(document.eventAdderForm.ckb_removeTextbox);" hidden>
 (NOT WORKING) Remove text bubbles only.<br>
