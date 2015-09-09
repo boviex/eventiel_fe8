@@ -15,6 +15,8 @@ Replaced all Dropbox urls with relative locations
 
 Added "Toggle Grid option"
 
+Added saving/loading
+
 Start Event IDs from 0x07 instead of 0x05 (just to be safe)
 
 Reworked default settings to fit FE8 template
