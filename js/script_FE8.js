@@ -70,7 +70,6 @@ $(function() {
 // Called when page is loaded/refreshed
 function setUp(eventFormDictionary, selectedMaps, fe8Defs, zhackDefs, FE8Chapters, FE8Music, FE8Backgrounds, FE8Spells)
 {
-	//TODO: FIX THIS TO WORK WITH LOCALSTORAGE
 	$('#topOutputForm').find('input[type=checkbox]:checked').removeAttr('checked'); //unchecks checkboxes for some reason
 	getAvailableEventIds();
 	updateSelectOptions(".MapChoices",selectedMaps);
@@ -95,12 +94,17 @@ function setUp(eventFormDictionary, selectedMaps, fe8Defs, zhackDefs, FE8Chapter
 
 
 /***
-Saving and Loading functions!!!
+Saving and Loading functions
 */
 function saveData(){
+	if(localStorage.getItem("save_flag") == "set"){
+		if(!confirm("Overwrite existing save?")){
+			return;
+		}
+	}
 	localStorage.setItem("save_html",document.body.innerHTML);
 	localStorage.setItem("save_flag","set");
-	alert("Saved!")
+	alert("Saved!");
 }
 
 function loadData(){
@@ -117,8 +121,10 @@ function loadData(){
 }
 
 function clearData(){
+	if(confirm("Clear saved data?")){
 	localStorage.removeItem("save_flag");
-	alert("Save data cleared.")
+	alert("Save data cleared.");
+	}
 }
 
 /*** Used to format definition lists obtained from other sources
