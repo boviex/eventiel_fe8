@@ -657,7 +657,7 @@ Status:
 </select><br>
 </div>
 
-<div id="remove_backgroundEventDiv">
+<div id="remove_backgroundEventDiv"> 
 <br>Remove text and/or background<br>
 </div>
 
@@ -672,10 +672,10 @@ Status:
 <div id="regular_convosEventDiv">
 <select name="sel_regular_convosType" id="sel_regular_convosType" onchange="setRequiredInfo('regular_convos');">
   <option>Add_Text (Default)</option>
-  <option>Add_Mode_Based_Text</option>
+  <!-- <option>Add_Mode_Based_Text</option>
   <option>Add_Gender_Based_Text</option>
   <option>Add_Event_Based_Text</option>
-  <option>Add_ASM_Based_Text</option>
+  <option>Add_ASM_Based_Text</option> -->
 </select><br>
 </div>
 
@@ -710,9 +710,9 @@ Status:
 <div id="genericEventEntryDiv">
 
 <div id="addMoreTextDiv">
-<input type="checkbox" name="ckb_addMoreText" onclick="toggleTextBackgroundForm();">
-<span id="lb_moreTextEntry">Addition to previous text</span><br>
-<input type="checkbox" name="ckb_unskippableText">Unskippable by player<br><br>
+<input type="checkbox" name="ckb_addMoreText" onclick="toggleTextBackgroundForm();" hidden>
+<span id="lb_moreTextEntry">(NOT WORKING) Addition to previous text</span><br>
+<input type="checkbox" name="ckb_unskippableText" hidden>(NOT WORKING) Unskippable by player<br><br>
 </div>
 
 <div id="genericRadioOptionsDiv">
@@ -932,13 +932,13 @@ Add Event Pause <a href="javascript:alert('This will pause the game until all\n
 preceding unit-based actions are completed.');">[Info]</a>
 </div>
 
-<div id="removeTextDiv"><br>
+<div id="removeTextDiv" hidden><br>
 <input type="checkbox" name="ckb_removeAllText" 
-    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeTextbox);">
-Remove text and background<br>
+    onclick="uncheck(document.eventAdderForm.ckb_removeOnlyTextBubble); uncheck(document.eventAdderForm.ckb_removeTextbox);" (hidden>
+(NOT WORKING) Remove text and background<br>
 <input type="checkbox" name="ckb_removeOnlyTextBubble" 
-    onclick="uncheck(document.eventAdderForm.ckb_removeAllText); uncheck(document.eventAdderForm.ckb_removeTextbox);">
-Remove text bubbles only.<br>
+    onclick="uncheck(document.eventAdderForm.ckb_removeAllText); uncheck(document.eventAdderForm.ckb_removeTextbox);" hidden>
+(NOT WORKING) Remove text bubbles only.<br>
 </div>
 
 <div id="removeTextboxDiv"><br>

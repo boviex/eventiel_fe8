@@ -2902,7 +2902,7 @@ function showGenericEntries(choice)
 		removeAll.style.display = "inline";
 		document.eventAdderForm.txt_openTextEntry.value = "800";
 		document.getElementById("lb_textEntry").innerHTML = "Text ID:";
-		document.getElementById("lb_moreTextEntry").innerHTML = "Addition to previous text";
+		document.getElementById("lb_moreTextEntry").innerHTML = "(NOT WORKING) Addition to previous text";
 		document.eventAdderForm.ckb_removeAllText.checked = "checked";
 	}
 	else if(choice == "scroll" || choice == "speech_bubble")
@@ -2912,7 +2912,7 @@ function showGenericEntries(choice)
 		textboxPos.style.display = "block";
 		document.eventAdderForm.txt_openTextEntry.value = "800";
 		document.getElementById("removeTextboxDiv").style.display = "inline";
-		document.getElementById("lb_moreTextEntry").innerHTML = "Addition to previous text";
+		document.getElementById("lb_moreTextEntry").innerHTML = "(NOT WORKING) Addition to previous text";
 		document.getElementById("lb_moreTextEntry").innerHTML = "Automatically centered";
 		document.getElementById("lb_textEntry").innerHTML = "Text ID:";
 		document.eventAdderForm.ckb_removeTextbox.checked = "checked";
@@ -3104,7 +3104,7 @@ function makeAllConvoFormsVisible()
 	ckb_background.style.display = "inline";
 	background.style.display = "inline";
 	removeAll.style.display = "inline";
-	document.getElementById("lb_moreTextEntry").innerHTML = "Addition to previous text";
+	document.getElementById("lb_moreTextEntry").innerHTML = "(NOT WORKING) Addition to previous text";
 	document.eventAdderForm.ckb_removeAllText.checked = "checked";
 }
 
@@ -3115,7 +3115,7 @@ function toggleTextBackgroundForm()
 	var background = document.getElementById("backgroundEntryDiv");
 	var ckb_background = document.eventAdderForm.ckb_backgroundEntry;
 	var pos = document.getElementById("posEntryDiv");
-	if(label == "Addition to previous text")
+	if(label == "(NOT WORKING) Addition to previous text")
 	{
 		if(isChecked == "true")
 		{
@@ -3905,21 +3905,24 @@ function getEventActionData()
 	// open Text
 	if(validInputProvided([openText]))
 	{
+		//OLD FE7 VERSION
+
 		if(actionType == "add_text")
 		{
 			label = retVal + isMoreText + "," + unskippableText + "," + openText;
-			var moreText = (isMoreText)?("MORETEXT 0x"):("TEX1 0x");
+			var moreText = (isMoreText)?("MORETEXT 0x"):("Text(");
 			if(includeBackground)
 			{
 				label += "," + background;
-				parameters = "FADI 0x10\nHIDEMAP\nBACG " + background + "\nFADU 0x10\n" + 
-							 "SHOWMAP\n" + noSkip + "TEX1 0x" + openText + "\n";
+				// parameters = "FADI 0x10\nHIDEMAP\nBACG " + background + "\nFADU 0x10\n" + 
+				// 			 "SHOWMAP\n" + noSkip + "TEX1 0x" + openText + "\n";
+				parameters = "Text(" + background + ",0x" + openText + ")\n";
 			}
 			else
-				parameters = noSkip + moreText + openText + "\n";
+				parameters = "Text(0x" + openText + ")\n";
 			return [label + ")", parameters];
 		}
-		
+
 		label = retVal + openText + ")";
 		if(actionType == "fade_into_cg_from_background")
 			return [label, "FROMBGTOCG 0x" + openText + " 0x2\n"];
@@ -4023,7 +4026,8 @@ function getEventCodeOfConditionBlocks()
 	var retCode = "TurnBasedEvents:\n";
 	retCode += (document.topOutputForm.ckb_prepScreen.checked)?
 				("TurnEventPlayer(0x0,EventAfterExitingPrepScreen,1)\n"):
-				("TurnEventPlayer(0x0,BeginningScene,1)\n");
+				("");
+				// ("TurnEventPlayer(0x0,BeginningScene,1)\n");
 
 	retCode += getEventCodeOfSpecificConditionBlock("turn_list");
 	
@@ -4583,8 +4587,9 @@ function updateEventFormInfo(string)
 		if(actionType == "add_text")
 		{
 			// If a background is loaded, the "more text" option is disabled
-			return "FADI 0x10\nHIDEMAP\nBACG 0x" + hexNum4 + 
-					"\nFADU 0x10\nSHOWMAP\n" + noSkip + "TEX1 0x" + hexNum3 + "\n";
+			// return "FADI 0x10\nHIDEMAP\nBACG 0x" + hexNum4 + 
+			// 		"\nFADU 0x10\nSHOWMAP\n" + noSkip + "TEX1 0x" + hexNum3 + "\n";
+			return "Text(" + hexNum4 + ',0x' + hexNum3 + ')';
 		}
 		// add_mode_based_text(moreText?, unskippable?, textId_Eliwood_Mode, textId_Hector_Mode)
 		else if(actionType == "add_mode_based_text")
