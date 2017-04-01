@@ -67,8 +67,8 @@ Definitions: <select name="sel_chosenDef" id="sel_chosenDef" onchange='selectDef
 <option selected>FE8</option>
 <!-- FE8 not supported yet
 <option>FE8</option>
--->
-<option>Zhack</option>
+--><!-- 
+<option>Zhack</option> -->
 </select>
 Custom Def: <input type="file" name="file_customDef" class = "spaceRight" onchange='uploadDef();'>
 <input type="checkbox" name="ckb_defsInOutput" onclick="updateEventOutput();">Use definitions in output<br><hr>
@@ -130,6 +130,7 @@ Side: <select name="sel_side" onchange='changeMapSprite();'>
 Autoleveling? <input type="checkbox" name="ckb_autoLevel"><br><br>
 
 <!-- Changing unit's load/start position-->
+<!-- In FE8 there is only one set of coords, but keeping both the same fixes cursor error  -->
 <input type="radio" name="rd_loadPos" checked="checked" onclick="uncheck(document.unitEditorForm.rd_startPos);" disabled="disabled" hidden> Load Position: 
 <input type="text" name="txt_load_x" value="0" size="2" maxlength="2" class="MapClickPos" readonly>,
 <input type="text" name="txt_load_y" value="0" size="2" maxlength="2" class="MapClickPos" readonly><br><br>
@@ -153,6 +154,7 @@ Number of REDAs:
 <input type="number" name="txt_reda_num" value="0" min="0" max="255"><br>
 Pointer to REDAs:
 <input type="text" name="txt_reda_pointer" value=""><br>
+<p>Pointer to REDAs*:<select name="sel_reda" id="sel_reda" class="RedaOptions"></select></p>
 <!-- Items in unit's inventory -->
 <p>Item 1: <select name="sel_item1" id="sel_item1" class="ItemOptions"></select></p>
 <p>Item 2: <select name="sel_item2" id="sel_item2" class="ItemOptions"></select></p>
@@ -210,10 +212,11 @@ New Event: <input type="text" name="txt_newEventBlock" id="txt_newEventBlock" pl
 <input type="text" name="txt_newScriptedFightBlock" id="txt_newScriptedFightBlock" placeholder="NewFightName">
 <input type="button" name="btn_addEventBlock" class="spaceRight" value="Add" onclick="addBlock('Event');">
 
-<!-- Switch between event block types (default, manual move, scripted fight)-->
+<!-- Switch between event block types (default, manual move, scripted fight) REDAs will be one of these-->
 Event Type:
 <select name="sel_eventActionType" class="spaceRight" onchange="switchEventForm();">
   <option>Event (Default)</option>
+  <option>REDA*</option>
   <option>Manual_Move</option>
   <option>Scripted_Fight</option>
 </select><hr>
@@ -267,6 +270,7 @@ Triggered Id:
 </div>
 
 <div id="locationCondDiv">
+<!-- Location Events -->
 Condition:<br>
 <select name="sel_locationCond" id="sel_locationCond" onchange="getNextCondition('sel_locationCond');">
   <option>Area</option>
@@ -284,6 +288,7 @@ Condition:<br>
 </div>
 
 <div id="characterCondDiv">
+<!-- Character events -->
 Condition:<br>
 <select name="sel_characterCond" id="sel_characterCond" onchange="getNextCondition('sel_characterCond');">
   <option>Talk</option>
@@ -292,6 +297,7 @@ Condition:<br>
 </div>
 
 <div id="trapsCondDiv">
+<!-- Traps -->
 Condition:<br>
 <select name="sel_trapsCond" id="sel_trapsCond" onchange="getNextCondition('sel_trapsCond');">
   <option>Fire Trap</option>
@@ -309,7 +315,7 @@ Position:
 </div>
 
 <div id="thirdCondTier">
-
+<!-- Area Event -->
 <div id="areaCondDiv">
 Bottom-Right Corner:
 <input type="text" name="txt_bottomXArea" id="txt_bottomXArea" size="3" value="15"
@@ -369,6 +375,7 @@ Character 2:<select name="sel_char2Cond" id="sel_char2Cond" class="Char"></selec
 <input type="checkbox" name="ckb_char1OnlyCond">Only char. 1 can initiate talk<br>
 <hr></div>
 
+<!-- Battle Quote -->
 <div id="battledCondDiv"><hr>
 Triggered Id:<input type="text" name="txt_battleQuoteTrigId" value="0x01"><br>
 <hr></div>
@@ -404,6 +411,7 @@ Event Id:
   <option>New Permanent Id</option>
 </select><br>
 
+<!-- Does this need changing?? TODO check Venno/AK re permanent events-->
 <select name="sel_availableEventIdsList" id="sel_availableEventIdsList" class="AvailableEventIds"></select>
 <select name="sel_availablePermEventIdsList" id="sel_availablePermEventIdsList" class="AvailablePermEventIds"></select>
 <select name="sel_availableCondIdsList" id="sel_availableCondIdsList" class="AvailableCondIds"></select>
@@ -443,6 +451,7 @@ New Event:
 
 <form id="eventAdderForm" name="eventAdderForm" class="editForm">
 <span class="boldedTitle">Add an action: </span><br>
+<!-- Should disable this for now? -->
 <input type="checkbox" name="ckb_advancedSearch" onclick="toggleEventSearchType();">Code Search<br>
 <div id="eventAdvancedSearchDiv">
 Search: <input type="text" name="eventCodeSearchBox" 
@@ -497,21 +506,21 @@ Sub-Category:<div id="secondEventTier">
   <option>Fade In/Out</option>
   <option>Fade_Set</option>
   <option>Load_Background</option>
-  <option>Load_CG</option>
+  <option>Load_CG*</option>
   <option>Remove_Background</option>
-  <option>Remove_CG</option>
+  <option>Remove_CG*</option>
 </select>
 
 <select id="sel_musicEvent" onchange="getNextEvent('sel_musicEvent');">
   <option>Change_Music</option>
-  <option>Fade_Out_Music</option>
+  <option>Fade_Out_Music*</option>
   <option>Adjust_Volume</option>
   <option>Sound Effects</option>
 </select>
 
 <select id="sel_textEvent" onchange="getNextEvent('sel_textEvent');">
   <option>Regular_Convos</option>
-  <option>CG_Convos</option>
+  <option>CG_Convos*</option>
   <option>Textboxes</option>
   <option>Remove_Text</option>
 </select>
@@ -537,8 +546,7 @@ Sub-Category:<div id="secondEventTier">
   <option>Move_To_Next_Chapter</option>
   <option>Move_To_Next_Chapter_Direct</option>
   <option>Game_Over</option>
-  <option>End_Game</option>
-  <option>End_Lyn_Mode</option>
+  <option>End_Game*</option>
 </select>
 
 <select id="sel_stallEvent" onchange="getNextEvent('sel_stallEvent');">
@@ -547,11 +555,11 @@ Sub-Category:<div id="secondEventTier">
 </select>
 
 <select id="sel_specialEvent" onchange="getNextEvent('sel_specialEvent');">
-  <option>Lightning_Bolt</option>
+  <option>Lightning_Bolt*</option>
   <!--<option>Map_Spells</option>-->
-  <option>Sword_Slash</option>
-  <option>Rumble</option>
-  <option>Quintessence_Effect</option>
+  <option>Sword_Slash*</option>
+  <option>Rumble*</option>
+  <option>Quintessence_Effect*</option>
 </select>
 
 <select id="sel_conditionsEvent" onchange="getNextEvent('sel_conditionsEvent');">
@@ -563,10 +571,10 @@ Sub-Category:<div id="secondEventTier">
   <option>If_Yes_Chosen</option>
   <option>If_Player_Phase</option>
   <option>If_Lucky</option>
-  <option>If_Male_Tactician</option>
+<!--   <option>If_Male_Tactician</option>
   <option>If_Eliwood_Mode</option>
-  <option>If_Hector_Mode</option>
-  <option>If_Tutorial_Mode</option>
+  <option>If_Hector_Mode</option> -->
+  <!-- <option>If_Tutorial_Mode</option> -->
   <option>Else</option>
   <option>Endif</option>
 </select>
@@ -575,7 +583,7 @@ Sub-Category:<div id="secondEventTier">
   <option>Event_Ids</option>
   <option>Call Event</option>
   <option>Jump to Event</option>
-  <option>Unskippable_Event</option>
+  <option>Unskippable_Event*</option>
   <option>ASM_Routine</option>
 </select>
 
@@ -611,29 +619,29 @@ Sub-Category:<div id="secondEventTier">
 <select name="sel_moveType" id="sel_moveType" onchange="setRequiredInfo('move');">
   <option>Move_To_Location</option>
   <option>Move_Next_To_Character</option>
-  <option>Move_Main_Lord</option>
-  <option>Reposition</option>
-  <option>Manual_Move</option>
+  <option>Move_Main_Lord*</option>
+  <option>Reposition*</option>
+  <option>Manual_Move*</option>
 </select><br><br>
 </div>
 
 <div id="rescueEventDiv">
 <select name="sel_rescueType" id="sel_rescueType" onchange="setRequiredInfo('rescue');">
-  <option>Rescue</option>
-  <option>Drop</option>
+  <option>Rescue*</option>
+  <option>Drop*</option>
 </select><br><br>
 </div>
 
 <div id="fightEventDiv">
 <select name="sel_fightType" id="sel_fightType" onchange="setRequiredInfo('fight');">
-  <option>Scripted_Fight</option>
-  <option>Scripted_Heal/Dance</option>
-  <option>Uncontrolled_Fight</option>
+  <option>Scripted_Fight*</option>
+  <option>Scripted_Heal/Dance*</option>
+  <option>Uncontrolled_Fight*</option>
 </select><br><br>
 </div>
 
 <div id="statusEventDiv">
-Status:
+Status*:
 <select name="sel_statusType" id="sel_statusType" onchange="setRequiredInfo('status');">
   <option>Invisible</option>
   <option>Grayed_Out</option>
@@ -710,11 +718,13 @@ Status:
 <div id="genericEventEntryDiv">
 
 <div id="addMoreTextDiv">
-<input type="checkbox" name="ckb_addMoreText" onclick="toggleTextBackgroundForm();" hidden>
-<span id="lb_moreTextEntry">(NOT WORKING) Addition to previous text</span><br>
-<input type="checkbox" name="ckb_unskippableText" hidden>(NOT WORKING) Unskippable by player<br><br>
+<input type="checkbox" name="ckb_addMoreText" onclick="toggleTextBackgroundForm();">
+<span id="lb_moreTextEntry">Addition to previous text*</span><br>
+<input type="checkbox" name="ckb_unskippableText" hidden>Unskippable by player*<br><br>
 </div>
 
+
+<!-- What is this??? -->
 <div id="genericRadioOptionsDiv">
 <input type="radio" name="rd_genericRadio1" onclick="uncheck(document.eventAdderForm.rd_genericRadio2);" checked="checked">
 <span id="lb_genericRadio1Entry"></span><br>
@@ -742,7 +752,7 @@ Unit Block(s):<br>
 </div>
 
 <div id="spellsEntryDiv">
-Spells: <!--<select name="sel_spellsEntry" class="SpellList"></select>--> Not working<br>
+Spells*: <!--<select name="sel_spellsEntry" class="SpellList"></select>--><br>
 </div>
 
 <span id="lb_charOrPos"></span>
