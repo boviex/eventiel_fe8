@@ -192,7 +192,7 @@ var FE8CharacterDefs = [
   "Monster14 0xB7",
   "Monster15 0xB8",
   "Monster16 0xB9",
-  "Monster17 0xBA",
+  "Monster17 0xBA // Uses different text id for some reason",
   "Monster18 0xBB",
   "Monster19 0xBC",
   "Monster20 0xBD",
