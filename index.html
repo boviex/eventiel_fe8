@@ -1,8 +1,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-     <script src="http://code.jquery.com/jquery-1.8.3.js"></script>
-    <script src="http://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+     <script src="https://code.jquery.com/jquery-1.8.3.js"></script>
+    <script src="https://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
     <script type="text/javascript" src="js/eventiel_selected_maps.js"></script>
     <script type="text/javascript" src="js/eventiel_event_form_dict.js"></script>
     <script type="text/javascript" src="js/eventiel_map_sprite_dict.js"></script>
@@ -1072,6 +1072,7 @@ Y: <input type="text" name="txt_mouseY" class="MapClickPos" value="0" size="4" r
 </form>
 <form name="mapGridLineToggleForm">
   <input type="checkbox" name="toggleGridCheck" onclick="draw();">Toggle Grid Lines
+</form>
 </div>
 </div>
 
@@ -1197,7 +1198,7 @@ Y: <input type="text" name="txt_mouseY" class="MapClickPos" value="0" size="4" r
 #define <span style="color:blue">Definition</span> <span style="color:orange">Id Number</span></h2>
 <form name="defMakerForm">
 Definition Type:
-<select name="sel_defType" onchange="updateDefType();">
+<select name="sel_defType" onchange="updateDefType(getFE8Definitions());">
   <option>Character</option>
   <option>Class</option>
   <option>Item</option>
